@@ -31,6 +31,7 @@ build_requires (
 
 requires 'Config::JFDI';
 requires 'JSON::Any';
+install_script 'script/jfdi2json';
 
 install_as_cpan;
 auto_install;

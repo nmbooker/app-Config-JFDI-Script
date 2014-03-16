@@ -1,0 +1,186 @@
+#!/usr/bin/perl
+
+# Convert a Catalyst / Config::JFDI file to JSON
+
+use warnings;
+use strict;
+use diagnostics;
+
+use Config::JFDI;
+use JSON::Any;
+
+my $options = get_options();
+
+my %jfdi_opts = (name => $options->{app});
+
+if (defined $options->{path}) {
+    $jfdi_opts{path} = $options->{path};
+}
+
+my $conf_hash;
+unless($conf_hash = Config::JFDI->open(%jfdi_opts)) {
+    print STDERR "Error: could not find config file";
+    exit 4;
+}
+
+my $jsonp = JSON::Any->new();
+print $jsonp->Dump($conf_hash) . "\n";
+
+sub get_options {
+    use File::Basename qw(basename);
+    use Getopt::Long;
+    use Pod::Usage;
+
+    my $prog = basename($0);  # can be used in error messages
+
+    my $options = {
+        help => 0,
+        man => 0,
+        app => undef,
+        path => undef,
+    };
+
+    Getopt::Long::Configure(qw{gnu_getopt});
+    my $parsed_ok = GetOptions(
+        'h|help'    =>  \$options->{help},
+        'man'       =>  \$options->{man},
+        'app=s'     =>  \$options->{app},
+        'path=s'    =>  \$options->{path},
+    );
+
+    pod2usage(-exitval => 2) unless $parsed_ok;
+
+    # Note -output defaults to *STDOUT if -exitval is 0 or 1.
+    # See the documentation for Pod::Usage under DESCRIPTION.
+    pod2usage(-exitval => 1, -verbose => 1) if $options->{help};
+    pod2usage(-exitval => 1, -verbose => 2) if $options->{man};
+
+    unless (defined $options->{app}) {
+        pod2usage(-message => "Error: --app not specified", -exitval => 2);
+    }
+
+    # Process remaining arguments from @ARGV here, adding results
+    # to $options.
+
+    return $options;
+}
+
+__END__
+
+=head1 NAME
+
+jfdi2json - read a Catalyst config file, and output it as JSON
+
+=head1 SYNOPSIS
+
+jfdi2json [options] --app APPNAME
+
+ Options:
+    -h, --help              brief help message
+    --man                   full documentation, including copyright and license info
+    --app APPNAME           the name of the app you want to read the config for
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help> or B<-h>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the manual page and exit.
+
+
+=back
+
+=head1 DESCRIPTION
+
+B<jfdi2json> will read the configuration of an app I<APPNAME>,
+using the rules specified in L<Config::JFDI>, and
+then output that configuration as JSON on standard output.
+
+The purpose of this is to provide a simple interface to Catalyst
+applications' config from shell scripts.
+
+Once you have the configuration in JSON format, you can use other
+free software tools such as B<jq> to extract the data you want from
+it.
+
+Note that L<Config::JFDI> uses L<Moose> so for speed you may well
+want to read the configuration once into a JSON file or string before
+extracting the data you want.
+
+=head1 EXIT CODES
+
+=over 8
+
+=item Exit status 0
+
+Success
+
+=item Exit status 1
+
+An unknown error occurred (e.g. an exception).  Also returned if you ask for help.
+Any explicit exits from this script will have a different number.
+
+=item Exit status 2
+
+Command line error.
+
+=item Exit status 4
+
+Config file missing.
+
+I'm not sure what will happen if the file is invalid - I would hope
+L<Config::JFDI> would raise an exception (implying status 1).
+
+=back
+
+=head1 EXAMPLES
+
+Given a file 'foo.conf' in the current working directory that looks like this:
+
+    <Bar>
+        name Hello
+        arr 1
+        arr 2
+        arr 3
+    </Bar>
+
+Here's what you might get on the command line:
+
+    % jfdi2json --app Foo --path .
+    {"Bar":{"name":"Hello","arr":["1","2","3"]}}
+
+If you want 'name' and the first element of 'arr' in a B<bash>(1)
+or B<zsh>(1) script, you might do this with the help of B<jq>(1):
+
+    json="$( jfdi2json --app Foo --path . )"
+    bar_name="$( jq -r '.["Bar"]["name"]' <<<"$json" )"
+    bar_arr_0="$( jq -r '.["Bar"]["arr"][0]' <<<"$json" )"
+
+In simpler shell languages you might want to use B<tempfile>(1)
+to create a temporary file, write the output of B<jfdi2json> to it
+and then read that file using B<jq>(1) as many times as you need,
+then delete that file at the end.
+
+=head1 COPYRIGHT
+
+    Copyright (c) 2014 Nicholas Martin Booker <NMBooker+software@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
