@@ -13,11 +13,10 @@ perl_version 5.006;
 tests_recursive('t');
 
 resources (
-   #homepage   => 'http://yourwebsitehere.com',
-   #IRC        => 'irc://irc.perl.org/#app-Config-JFDI-Script',
+   homepage   => 'https://github.com/nmbooker/app-Config-JFDI-Script',
    license    => 'http://www.gnu.org/licenses/gpl-3.0.html',
-   #repository => 'git://github.com/Nicholas Martin Booker/app-Config-JFDI-Script.git',
-   #bugtracker => 'http://rt.cpan.org/NoAuth/Bugs.html?Dist=app-Config-JFDI-Script',
+   repository => 'git://github.com/nmbooker/app-Config-JFDI-Script.git',
+   bugtracker => 'https://github.com/nmbooker/app-Config-JFDI-Script/issues',
 );
 
 
